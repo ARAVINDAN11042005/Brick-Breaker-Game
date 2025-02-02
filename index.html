@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Basic Breakout HTML Game</title>
+<meta charset="UTF-8">
+<style>
+    html, body {
+height: 100%;
+margin: 0;
+    }
+
+    body {
+background: black;
+display: flex;
+align-items: center;
+justify-content: center;
+    }
+
+    canvas {
+background: #222;
+border: 2px solid white;
+    }
+</style>
+</head>
+<body>
+<canvas width="400" height="500" id="game"></canvas>
+<script>
+const canvas = document.getElementById('game');
+const context = canvas.getContext('2d');
+
+const level1 = [
+[],[],[],[],[],[],
+['R','R','R','R','R','R','R','R','R','R','R','R','R','R'],['R','R','R','R','R','R','R','R','R','R','R','R','R','R'],
+['O','O','O','O','O','O','O','O','O','O','O','O','O','O'],
+['O','O','O','O','O','O','O','O','O','O','O','O','O','O'],
+['G','G','G','G','G','G','G','G','G','G','G','G','G','G'],
+['G','G','G','G','G','G','G','G','G','G','G','G','G','G'],
+['Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y'],
+['Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y','Y']
+];
+
+const colorMap = {'R': 'red','O': 'orange','G': 'green','Y': 'yellow'
+};
+const brickGap = 2;
+const brickWidth = 25;
+const brickHeight = 12;
+const wallSize = 12;
+
+const bricks = [];
+for (let row = 0; row < level1.length; row++) {
+for (let col = 0; col < level1[row].length; col++) {
+    const colorCode = level1[row][col];
+    bricks.push({
+      x: wallSize + (brickWidth + brickGap) * col,
+      y: wallSize + (brickHeight + brickGap) * row,
+color: colorMap[colorCode],
+width: brickWidth,
+height: brickHeight
+    });
+}
+}
+
+const paddle = {
+  x: canvas.width / 2 - brickWidth * 2,
+y: canvas.height - 30,
+  width: brickWidth * 4,
+height: brickHeight,
+dx: 0,
+speed: 5
+};
+
+const ball = {
+x: canvas.width / 2,
+y: canvas.height - 50,
+radius: 7,
+speed: 20,
+dx: 3,
+dy: -3,
+launched: false
+};
+
+function collides(ball, brick) {
+return ball.x + ball.radius > brick.x &&
+ball.x - ball.radius < brick.x + brick.width &&
+ball.y + ball.radius > brick.y &&
+ball.y - ball.radius < brick.y + brick.height;
+}
+
+function loop() {
+context.clearRect(0, 0, canvas.width, canvas.height);
+paddle.x += paddle.dx;
+if (paddle.x < wallSize) paddle.x = wallSize;
+if (paddle.x + paddle.width > canvas.width - wallSize) paddle.x = canvas.width - wallSize - paddle.width;
+
+if (ball.launched) {
+    ball.x += ball.dx;
+    ball.y += ball.dy;
+    if (ball.x - ball.radius < wallSize || ball.x + ball.radius > canvas.width - wallSize) {
+      ball.dx *= -1;
+    }
+    if (ball.y - ball.radius < wallSize) {
+      ball.dy *= -1;
+    }
+
+    if (ball.x > paddle.x && ball.x < paddle.x + paddle.width && ball.y + ball.radius > paddle.y) {
+    ball.dy *= -1;
+    ball.y = paddle.y - ball.radius;
+    }
+
+    if (ball.y > canvas.height) {
+ball.launched = false;
+ball.x = canvas.width / 2;
+ball.y = canvas.height - 50;
+ball.dx = 3;
+ball.dy = -3;
+    }
+    for (let i = 0; i < bricks.length; i++) {
+const brick = bricks[i];
+if (collides(ball, brick)) {
+        bricks.splice(i, 1);
+        ball.dy *= -1;
+        break;
+}
+    }
+}
+context.fillStyle = 'lightgrey';
+context.fillRect(0, 0, canvas.width, wallSize);
+context.fillRect(0, 0, wallSize, canvas.height);
+context.fillRect(canvas.width - wallSize, 0, wallSize, canvas.height);
+
+bricks.forEach(brick => {
+    context.fillStyle = brick.color;
+    context.fillRect(brick.x, brick.y, brick.width, brick.height);
+});
+
+context.fillStyle = 'cyan';
+context.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+
+context.fillStyle = 'white';
+context.beginPath();
+  context.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+context.fill();
+context.closePath();
+
+requestAnimationFrame(loop);
+}
+
+document.addEventListener('keydown', e => {
+if (e.key === 'ArrowLeft') paddle.dx = -paddle.speed;
+if (e.key === 'ArrowRight') paddle.dx = paddle.speed;
+
+if (e.key === ' ' && !ball.launched) {
+    ball.launched = true;
+}
+});
+
+document.addEventListener('keyup', e => {
+if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') paddle.dx = 0;
+});
+loop();
+</script>
+</body>
+</html>
